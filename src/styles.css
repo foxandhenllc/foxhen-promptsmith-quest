@@ -42,7 +42,8 @@ h1 { margin: 0 0 1rem; font-size: clamp(3rem,7vw,6rem); line-height: .88; letter
 .action-row { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 1.3rem; }
 .action-row button { min-height: 3rem; border: 0; border-radius: 999px; padding: 0 1rem; cursor: pointer; font-weight: 950; }
 .action-row button:first-child { background: #ffc76b; color: #110d07; }
-.action-row button:last-child { background: rgba(255,255,255,.12); color: #fffaf4; border: 1px solid rgba(255,255,255,.16); }
+.action-row button:not(:first-child) { background: rgba(255,255,255,.12); color: #fffaf4; border: 1px solid rgba(255,255,255,.16); }
+.action-row button:disabled { opacity: .42; cursor: not-allowed; }
 .stat-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: .75rem; margin-top: 1rem; }
 .stat-grid article { border-radius: 1.2rem; background: rgba(255,255,255,.08); padding: 1rem; }
 .stat-grid span, .stat-grid small { display: block; color: rgba(255,250,244,.62); font-weight: 850; }
@@ -52,14 +53,24 @@ canvas { display: block; width: 100%; aspect-ratio: 16/10; border-radius: 1.4rem
 .prompt-board { display: grid; grid-template-columns: minmax(260px,.8fr) minmax(0,1fr); gap: 1rem; }
 .block-bank, .prompt-forge { min-height: 620px; border-radius: 1.4rem; background: rgba(255,255,255,.05); padding: 1rem; }
 .block-grid { display: grid; gap: .7rem; }
-.prompt-block { border: 1px solid rgba(255,255,255,.15); border-radius: 1rem; background: rgba(255,255,255,.08); color: #fffaf4; padding: .8rem; cursor: pointer; text-align: left; }
+.prompt-block { border: 1px solid rgba(255,255,255,.15); border-radius: 1rem; background: rgba(255,255,255,.08); color: #fffaf4; padding: .8rem; cursor: grab; text-align: left; }
 .prompt-block strong, .prompt-block small { display: block; }
 .prompt-block small { color: rgba(255,250,244,.6); margin-top: .25rem; line-height: 1.4; }
-.prompt-block.used { opacity: .42; }
-.prompt-slot { min-height: 4.4rem; border: 1px dashed rgba(255,255,255,.2); border-radius: 1rem; padding: .8rem; margin-bottom: .7rem; background: rgba(255,255,255,.06); }
+.prompt-block.used, .prompt-block.locked { opacity: .42; cursor: not-allowed; }
+.forge-slots { display: grid; gap: .6rem; margin-bottom: .8rem; }
+.prompt-slot { min-height: 4.4rem; border: 1px dashed rgba(255,255,255,.2); border-radius: 1rem; padding: .8rem; background: rgba(255,255,255,.06); }
+.prompt-slot.filled { border-style: solid; background: rgba(255,209,102,.12); }
+.prompt-slot strong, .prompt-slot small { display: block; }
+.prompt-slot small { margin-top: .25rem; color: rgba(255,250,244,.62); }
+.prompt-slot button { margin-top: .5rem; border: 1px solid rgba(255,255,255,.16); border-radius: 999px; background: rgba(255,255,255,.1); color: #fffaf4; cursor: pointer; font-size: .8rem; font-weight: 900; padding: .35rem .65rem; }
 .prompt-output { width: 100%; min-height: 13rem; border: 1px solid rgba(255,255,255,.14); border-radius: 1rem; background: rgba(0,0,0,.25); color: #fffaf4; padding: 1rem; font: 0.9rem/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; }
 .gate-list { display: grid; gap: .5rem; margin: 1rem 0; }
 .gate { display: flex; justify-content: space-between; gap: 1rem; border-radius: .9rem; background: rgba(255,255,255,.07); padding: .7rem .8rem; }
 .gate.ok { color: #bff3d2; }
+.feedback-list { display: grid; gap: .55rem; margin-top: 1rem; }
+.feedback-list p { margin: 0; border-radius: .9rem; background: rgba(255,255,255,.07); padding: .7rem .8rem; color: rgba(255,250,244,.76); font-weight: 800; line-height: 1.35; }
+.handoff-preview { margin-top: .8rem; border: 1px solid rgba(255,255,255,.14); border-radius: 1rem; background: rgba(255,255,255,.06); padding: .8rem; }
+.handoff-preview summary { cursor: pointer; font-weight: 950; }
+.handoff-preview pre { max-height: 14rem; overflow: auto; white-space: pre-wrap; color: rgba(255,250,244,.8); font: .8rem/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; }
 @media (max-width: 1050px) { main, .prompt-board { grid-template-columns: 1fr; } }
 @media (max-width: 720px) { .site-header { border-radius: 1.4rem; align-items: flex-start; } nav { flex-wrap: wrap; justify-content: flex-end; } .stat-grid { grid-template-columns: 1fr; } }

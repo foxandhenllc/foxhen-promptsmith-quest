@@ -1,39 +1,165 @@
-import { useMemo, useState } from "react";
+import { DragEvent, useMemo, useState } from "react";
 import "./styles.css";
+import {
+  addBlockToBuild,
+  advanceLevel,
+  blocks,
+  createQuestState,
+  exportPromptHandoff,
+  levels,
+  moveBlockInBuild,
+  removeBlockFromBuild,
+  scoreQuest,
+  type QuestState,
+} from "./gameLogic";
 
-type Block = { id: string; category: string; title: string; text: string; points: number };
-const blocks: Block[] = [
-  { id: "role", category: "Role", title: "Senior operator", text: "Act as a pragmatic workflow consultant for a small business owner.", points: 15 },
-  { id: "goal", category: "Goal", title: "Clear outcome", text: "Produce a step-by-step handoff that can be executed within 48 hours.", points: 15 },
-  { id: "context", category: "Context", title: "Business context", text: "Use the supplied project notes, current tools, buyer constraints, and approval gates.", points: 14 },
-  { id: "constraints", category: "Constraint", title: "Hard boundaries", text: "Do not invent facts, send messages, create accounts, or perform transactions.", points: 16 },
-  { id: "format", category: "Format", title: "Output shape", text: "Return a ranked shortlist, exact next action, risk note, and reusable checklist.", points: 12 },
-  { id: "examples", category: "Example", title: "Example style", text: "Prefer concise implementation-ready bullets with concrete file paths or fields where relevant.", points: 10 },
-  { id: "qa", category: "QA", title: "Quality gate", text: "Before finalizing, identify missing inputs, unclear assumptions, and highest-risk failure points.", points: 18 },
-  { id: "reuse", category: "Reuse", title: "Pipeline note", text: "Add the reusable pattern if this succeeds once and can become a repeatable service.", points: 10 },
-];
-const gates = ["Role", "Goal", "Context", "Constraint", "Format", "QA"];
+const bestScoreKey = "promptsmith-quest.bestScore";
+
+function loadBestScore() {
+  const rawValue = window.localStorage.getItem(bestScoreKey);
+  return rawValue ? Number.parseInt(rawValue, 10) || 0 : 0;
+}
 
 function App() {
-  const [selected, setSelected] = useState<string[]>([]);
-  const [level, setLevel] = useState(1);
-  const usedBlocks = blocks.filter((block) => selected.includes(block.id));
-  const score = useMemo(() => Math.min(100, usedBlocks.reduce((sum, block) => sum + block.points, 0) + (level - 1) * 4), [usedBlocks, level]);
-  const passedGates = gates.filter((gate) => usedBlocks.some((block) => block.category === gate));
-  const won = score >= 84 && passedGates.length === gates.length;
-  const prompt = usedBlocks.map((block) => `[${block.category}] ${block.text}`).join("\n\n");
-  function toggle(id: string) {
-    setSelected((current) => current.includes(id) ? current.filter((item) => item !== id) : current.length >= 6 ? current : [...current, id]);
+  const [state, setState] = useState<QuestState>(() => createQuestState(typeof window === "undefined" ? 0 : loadBestScore()));
+  const result = useMemo(() => scoreQuest(state), [state]);
+  const level = levels[state.levelIndex];
+  const prompt = result.selectedBlocks.map((block) => `[${block.category}] ${block.text}`).join("\n\n");
+  const handoff = useMemo(() => exportPromptHandoff(state), [state]);
+
+  function updateState(nextState: QuestState) {
+    const nextResult = scoreQuest(nextState);
+    const withBest = { ...nextState, bestScore: Math.max(nextState.bestScore, nextResult.score) };
+    window.localStorage.setItem(bestScoreKey, String(withBest.bestScore));
+    setState(withBest);
   }
+
+  function addBlock(id: string) {
+    updateState(addBlockToBuild(state, id));
+  }
+
+  function removeBlock(id: string) {
+    updateState(removeBlockFromBuild(state, id));
+  }
+
+  function dropBlock(event: DragEvent<HTMLElement>, targetIndex?: number) {
+    event.preventDefault();
+    const blockId = event.dataTransfer.getData("text/plain");
+    if (!blockId) return;
+    if (state.selected.includes(blockId)) updateState(moveBlockInBuild(state, blockId, targetIndex ?? state.selected.length));
+    else updateState(addBlockToBuild(state, blockId));
+  }
+
+  function dragBlock(event: DragEvent<HTMLElement>, blockId: string) {
+    event.dataTransfer.setData("text/plain", blockId);
+    event.dataTransfer.effectAllowed = "move";
+  }
+
+  function resetForge() {
+    updateState({ ...state, selected: [], feedback: [`Reset ${level.title}.`] });
+  }
+
   function nextLevel() {
-    if (won) {
-      setLevel((current) => current + 1);
-      setSelected([]);
+    updateState(advanceLevel(state));
+  }
+
+  async function copyHandoff() {
+    try {
+      await navigator.clipboard?.writeText(exportPromptHandoff(state));
+      setState({ ...state, feedback: ["Prompt handoff copied to clipboard.", ...state.feedback].slice(0, 4) });
+    } catch {
+      setState({ ...state, feedback: ["Clipboard permission denied. Use Export .txt instead.", ...state.feedback].slice(0, 4) });
     }
   }
-  window.render_game_to_text = () => JSON.stringify({ mode: won ? "won" : "building", score, level, selected, passedGates, missingGates: gates.filter((gate) => !passedGates.includes(gate)), prompt });
+
+  function downloadHandoff() {
+    const blob = new Blob([exportPromptHandoff(state)], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "promptsmith-quest-handoff.txt";
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
+  window.render_game_to_text = () => JSON.stringify({
+    mode: result.passed ? "passed" : "building",
+    level,
+    score: result.score,
+    bestScore: state.bestScore,
+    selected: state.selected,
+    requiredMet: result.requiredMet,
+    missing: result.missing,
+    bannedHits: result.bannedHits.map((block) => block.id),
+    prompt,
+    feedback: result.feedback,
+  });
   window.advanceTime = () => undefined;
-  return <div className="game-shell"><header className="site-header"><a className="brand" href="https://foxandhenllc.com"><span className="brand-mark">F&amp;H</span><span><strong>Fox &amp; Hen</strong><small>Promptsmith Quest</small></span></a><nav><a href="#forge">Forge</a><a className="nav-button" href="https://github.com/foxandhenllc/foxhen-promptsmith-quest">Repository</a></nav></header><main><aside className="game-info"><p>Playable prompt puzzle</p><h1>Forge a prompt that passes every gate.</h1><p className="lede">Choose up to six blocks. The prompt wins when it covers the required categories and reaches a high enough quality score.</p><div className="controls"><span>Select up to 6 blocks</span><span>Required gates: {gates.join(", ")}</span><span>Win score: 84+</span></div><div className="action-row"><button onClick={() => setSelected([])}>Reset forge</button><button onClick={nextLevel} disabled={!won}>{won ? "Advance level" : "Pass gates first"}</button></div><div className="stat-grid"><article><span>Score</span><strong>{score}</strong><small>prompt quality</small></article><article><span>Level</span><strong>{level}</strong><small>quest round</small></article><article><span>Blocks</span><strong>{selected.length}/6</strong><small>selected</small></article><article><span>Status</span><strong>{won ? "Won" : "Forge"}</strong><small>{won ? "Prompt package passes QA." : "Missing gates remain."}</small></article></div></aside><section id="forge" className="game-card prompt-board"><div className="block-bank"><h2>Prompt blocks</h2><div className="block-grid">{blocks.map((block) => <button key={block.id} className={selected.includes(block.id) ? "prompt-block used" : "prompt-block"} onClick={() => toggle(block.id)}><strong>{block.title}</strong><small>{block.category} · {block.points} pts</small><small>{block.text}</small></button>)}</div></div><div className="prompt-forge"><h2>Forged prompt</h2><div className="gate-list">{gates.map((gate) => <div key={gate} className={passedGates.includes(gate) ? "gate ok" : "gate"}><span>{gate}</span><strong>{passedGates.includes(gate) ? "passed" : "missing"}</strong></div>)}</div><div className="prompt-slot">{won ? "Quest complete. This prompt is ready for a handoff package." : "Add required blocks until every QA gate passes."}</div><textarea className="prompt-output" value={prompt || "Selected prompt blocks will assemble here."} readOnly /></div></section></main></div>;
+  return (
+    <div className="game-shell">
+      <header className="site-header">
+        <a className="brand" href="https://foxandhenllc.com"><span className="brand-mark">F&amp;H</span><span><strong>Fox &amp; Hen</strong><small>Promptsmith Quest</small></span></a>
+        <nav><a href="#forge">Forge</a><a className="nav-button" href="https://github.com/foxandhenllc/foxhen-promptsmith-quest">Repository</a></nav>
+      </header>
+      <main>
+        <aside className="game-info">
+          <p>Playable prompt puzzle</p>
+          <h1>Forge a prompt that passes every gate.</h1>
+          <p className="lede">Drag prompt blocks into a staged forge, satisfy each level’s constraints, and export a clean prompt handoff without calling any model.</p>
+          <div className="controls">
+            <span>{level.title}</span>
+            <span>{level.twist}</span>
+            <span>Required: {level.required.join(", ")}</span>
+            {level.banned.length > 0 && <span>Locked: {level.banned.join(", ")}</span>}
+          </div>
+          <div className="action-row">
+            <button onClick={resetForge}>Reset forge</button>
+            <button onClick={nextLevel} disabled={!result.passed}>{result.passed ? "Advance level" : "Pass challenge first"}</button>
+            <button onClick={copyHandoff}>Copy handoff</button>
+            <button onClick={downloadHandoff}>Export .txt</button>
+          </div>
+          <div className="stat-grid">
+            <article><span>Score</span><strong>{result.score}</strong><small>best {state.bestScore}</small></article>
+            <article><span>Level</span><strong>{state.levelIndex + 1}/3</strong><small>{level.minScore}+ to pass</small></article>
+            <article><span>Blocks</span><strong>{state.selected.length}/{level.maxBlocks}</strong><small>selected slots</small></article>
+            <article><span>Status</span><strong>{result.passed ? "Passed" : "Forge"}</strong><small>{result.missing.length ? `Missing ${result.missing.join(", ")}` : "All gates covered"}</small></article>
+          </div>
+          <div className="feedback-list">
+            {result.feedback.map((item) => <p key={item}>{item}</p>)}
+          </div>
+        </aside>
+        <section id="forge" className="game-card prompt-board">
+          <div className="block-bank">
+            <h2>Prompt blocks</h2>
+            <p>{level.brief}</p>
+            <div className="block-grid">
+              {blocks.map((block) => {
+                const locked = level.banned.includes(block.category);
+                const used = state.selected.includes(block.id);
+                return <button key={block.id} draggable={!locked} onDragStart={(event) => dragBlock(event, block.id)} className={used ? "prompt-block used" : locked ? "prompt-block locked" : "prompt-block"} onClick={() => addBlock(block.id)} disabled={locked || used}><strong>{block.title}</strong><small>{block.category} · {block.points} pts</small><small>{block.text}</small></button>;
+              })}
+            </div>
+          </div>
+          <div className="prompt-forge" onDragOver={(event) => event.preventDefault()} onDrop={(event) => dropBlock(event)}>
+            <h2>Forged prompt</h2>
+            <div className="gate-list">
+              {level.required.map((gate) => <div key={gate} className={result.requiredMet.includes(gate) ? "gate ok" : "gate"}><span>{gate}</span><strong>{result.requiredMet.includes(gate) ? "passed" : "missing"}</strong></div>)}
+            </div>
+            <div className="forge-slots">
+              {Array.from({ length: level.maxBlocks }).map((_, index) => {
+                const block = result.selectedBlocks[index];
+                return <div key={index} className={block ? "prompt-slot filled" : "prompt-slot"} onDragOver={(event) => event.preventDefault()} onDrop={(event) => dropBlock(event, index)}>
+                  {block ? <><strong draggable onDragStart={(event) => dragBlock(event, block.id)}>{index + 1}. {block.title}</strong><small>{block.category} · {block.points} pts</small><button onClick={() => removeBlock(block.id)}>Remove</button></> : <span>Drop block {index + 1}</span>}
+                </div>;
+              })}
+            </div>
+            <textarea className="prompt-output" value={prompt || "Selected prompt blocks will assemble here."} readOnly />
+            <details className="handoff-preview"><summary>Export preview</summary><pre>{handoff}</pre></details>
+          </div>
+        </section>
+      </main>
+    </div>
+  );
 }
 
 declare global { interface Window { render_game_to_text?: () => string; advanceTime?: (ms: number) => void; } }

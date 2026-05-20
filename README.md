@@ -11,10 +11,17 @@ A playable prompt-building puzzle with constraints, QA gates, and final prompt s
 
 ## Fully Working Behaviors
 
-- Playable local state with scoring and success/failure conditions.
-- Keyboard or click controls documented in the interface.
+- Three-level prompt-building quest with changing challenge briefs, required categories, locked categories, max block counts, and pass scores.
+- Drag-and-drop or click-to-add prompt blocks into a staged forge.
+- Scoring feedback for missing gates, locked categories, ordering bonus, concision, and level pass/fail state.
+- Persistent best score stored locally with `localStorage`.
+- Copy/export prompt handoff with the assembled prompt and scoring notes.
 - Deterministic test hooks exposed as `window.render_game_to_text` and `window.advanceTime`.
 - No backend, auth, external service calls, production data, or customer work.
+
+## Fork Notes
+
+All prompt blocks and challenges are fictional local sample data. Customize blocks, scoring, or level constraints in `src/gameLogic.ts`; no credentials are needed.
 
 ## Local Run
 
