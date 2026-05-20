@@ -1,289 +1,40 @@
-import { useMemo, useState, type CSSProperties } from "react";
-import { sample, type DemoStage, type StageStatus, type WorkItem } from "./data";
+import { useMemo, useState } from "react";
 import "./styles.css";
 
-const statusLabels: Record<StageStatus, string> = {
-  ready: "Ready",
-  active: "In progress",
-  waiting: "Needs approval",
-  queued: "Queued",
-};
-
-const statusClass: Record<StageStatus, string> = {
-  ready: "status-ready",
-  active: "status-active",
-  waiting: "status-waiting",
-  queued: "status-queued",
-};
+type Block = { id: string; category: string; title: string; text: string; points: number };
+const blocks: Block[] = [
+  { id: "role", category: "Role", title: "Senior operator", text: "Act as a pragmatic workflow consultant for a small business owner.", points: 15 },
+  { id: "goal", category: "Goal", title: "Clear outcome", text: "Produce a step-by-step handoff that can be executed within 48 hours.", points: 15 },
+  { id: "context", category: "Context", title: "Business context", text: "Use the supplied project notes, current tools, buyer constraints, and approval gates.", points: 14 },
+  { id: "constraints", category: "Constraint", title: "Hard boundaries", text: "Do not invent facts, send messages, create accounts, or perform transactions.", points: 16 },
+  { id: "format", category: "Format", title: "Output shape", text: "Return a ranked shortlist, exact next action, risk note, and reusable checklist.", points: 12 },
+  { id: "examples", category: "Example", title: "Example style", text: "Prefer concise implementation-ready bullets with concrete file paths or fields where relevant.", points: 10 },
+  { id: "qa", category: "QA", title: "Quality gate", text: "Before finalizing, identify missing inputs, unclear assumptions, and highest-risk failure points.", points: 18 },
+  { id: "reuse", category: "Reuse", title: "Pipeline note", text: "Add the reusable pattern if this succeeds once and can become a repeatable service.", points: 10 },
+];
+const gates = ["Role", "Goal", "Context", "Constraint", "Format", "QA"];
 
 function App() {
-  const [activeStage, setActiveStage] = useState(1);
-  const [deliverySpeed, setDeliverySpeed] = useState(2);
-  const [checkedItems, setCheckedItems] = useState(() => new Set(["scope", "qa"]));
-
-  const currentStage = sample.stages[activeStage - 1];
-  const activeWork = sample.workItems.find((item) => item.status === currentStage.status) ?? sample.workItems[0];
-  const readiness = useMemo(() => {
-    const base = 58 + deliverySpeed * 7 + checkedItems.size * 6;
-    const waitingPenalty = sample.workItems.filter((item) => item.status === "waiting").length * 3;
-    return Math.min(98, Math.max(42, base - waitingPenalty));
-  }, [checkedItems, deliverySpeed]);
-
-  const appStyle = {
-    "--accent": sample.theme.accent,
-    "--accent-2": sample.theme.accent2,
-    "--ink": sample.theme.ink,
-    "--soft": sample.theme.soft,
-    "--warm": sample.theme.warm,
-    "--surface": sample.theme.surface,
-    "--muted": sample.theme.muted,
-    "--border": sample.theme.border,
-    "--score": `${readiness}%`,
-  } as CSSProperties;
-
-  function toggleItem(item: string) {
-    setCheckedItems((current) => {
-      const next = new Set(current);
-      if (next.has(item)) {
-        next.delete(item);
-      } else {
-        next.add(item);
-      }
-      return next;
-    });
+  const [selected, setSelected] = useState<string[]>([]);
+  const [level, setLevel] = useState(1);
+  const usedBlocks = blocks.filter((block) => selected.includes(block.id));
+  const score = useMemo(() => Math.min(100, usedBlocks.reduce((sum, block) => sum + block.points, 0) + (level - 1) * 4), [usedBlocks, level]);
+  const passedGates = gates.filter((gate) => usedBlocks.some((block) => block.category === gate));
+  const won = score >= 84 && passedGates.length === gates.length;
+  const prompt = usedBlocks.map((block) => `[${block.category}] ${block.text}`).join("\n\n");
+  function toggle(id: string) {
+    setSelected((current) => current.includes(id) ? current.filter((item) => item !== id) : current.length >= 6 ? current : [...current, id]);
   }
-
-  return (
-    <div className="app-shell" style={appStyle}>
-      <header className="site-header">
-        <a className="brand" href="https://foxandhenllc.com" aria-label="Fox and Hen website">
-          <span className="brand-mark">F&amp;H</span>
-          <span>
-            <strong>Fox &amp; Hen</strong>
-            <small>{sample.subtitle}</small>
-          </span>
-        </a>
-        <nav aria-label="Demo navigation">
-          <a href="#workbench">Workbench</a>
-          <a href="#handoff">Handoff</a>
-          <a className="nav-button" href={sample.repositoryUrl}>Repository</a>
-        </nav>
-      </header>
-
-      <main>
-        <section className="hero">
-          <div className="hero-copy">
-            <p className="service-line">{sample.serviceLine}</p>
-            <h1>{sample.heroTitle}</h1>
-            <p className="lede">{sample.heroCopy}</p>
-            <div className="hero-actions" aria-label="Demo actions">
-              <button type="button" className="primary-action" onClick={() => setActiveStage(2)}>
-                {sample.primaryAction}
-              </button>
-              <button type="button" className="secondary-action" onClick={() => setActiveStage(4)}>
-                {sample.secondaryAction}
-              </button>
-            </div>
-            <div className="metric-strip" aria-label="Demo metrics">
-              {sample.metrics.map((metric) => (
-                <article key={metric.label}>
-                  <span>{metric.label}</span>
-                  <strong>{metric.value}</strong>
-                  <small>{metric.note}</small>
-                </article>
-              ))}
-            </div>
-          </div>
-
-          <HeroConsole
-            currentStage={currentStage}
-            activeWork={activeWork}
-            readiness={readiness}
-            setActiveStage={setActiveStage}
-          />
-        </section>
-
-        <section id="workbench" className="workbench">
-          <div className="section-heading">
-            <p>Live sample workflow</p>
-            <h2>Click through the operating model behind the demo.</h2>
-          </div>
-          <div className="workbench-grid">
-            <div className="stage-list" aria-label="Workflow stages">
-              {sample.stages.map((stage) => (
-                <button
-                  type="button"
-                  key={stage.label}
-                  className={stage.index === activeStage ? "stage-card is-active" : "stage-card"}
-                  onClick={() => setActiveStage(stage.index)}
-                >
-                  <span className="stage-number">{stage.index}</span>
-                  <span>
-                    <strong>{stage.label}</strong>
-                    <small>{stage.detail}</small>
-                  </span>
-                  <em className={statusClass[stage.status]}>{statusLabels[stage.status]}</em>
-                </button>
-              ))}
-            </div>
-
-            <div className="detail-panel">
-              <div className="panel-topline">
-                <span>{currentStage.owner}</span>
-                <em className={statusClass[currentStage.status]}>{statusLabels[currentStage.status]}</em>
-              </div>
-              <h3>{currentStage.label}</h3>
-              <p>{currentStage.detail}</p>
-
-              <div className="control-panel" aria-label="Scenario controls">
-                <label>
-                  Sprint intensity
-                  <input
-                    type="range"
-                    min="1"
-                    max="4"
-                    value={deliverySpeed}
-                    onChange={(event) => setDeliverySpeed(Number(event.target.value))}
-                  />
-                </label>
-                <div className="toggles">
-                  {[
-                    ["scope", "Scope locked"],
-                    ["qa", "QA pass"],
-                    ["handoff", "Handoff note"],
-                    ["reuse", "Reuse path"],
-                  ].map(([key, label]) => (
-                    <button
-                      type="button"
-                      key={key}
-                      className={checkedItems.has(key) ? "toggle is-on" : "toggle"}
-                      onClick={() => toggleItem(key)}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="readiness-card">
-                <div className="score-ring" aria-label={`Readiness score ${readiness} percent`}>
-                  <strong>{readiness}</strong>
-                  <span>ready</span>
-                </div>
-                <div>
-                  <h4>{activeWork.title}</h4>
-                  <p>{activeWork.detail}</p>
-                  <span className={statusClass[activeWork.status]}>{statusLabels[activeWork.status]}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section id="handoff" className="handoff">
-          <div className="section-heading">
-            <p>Handoff package</p>
-            <h2>Every sample ends with a buyer-readable delivery bundle.</h2>
-          </div>
-          <div className="handoff-grid">
-            {sample.deliverables.map((deliverable, index) => (
-              <article key={deliverable.title} className="deliverable-card">
-                <span>{String(index + 1).padStart(2, "0")}</span>
-                <h3>{deliverable.title}</h3>
-                <p>{deliverable.detail}</p>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section className="timeline-section">
-          <div className="timeline">
-            {sample.timeline.map((item) => (
-              <article key={item.time}>
-                <strong>{item.time}</strong>
-                <p>{item.detail}</p>
-              </article>
-            ))}
-          </div>
-          <div className="proof-card">
-            <h2>What this demonstrates</h2>
-            <ul>
-              {sample.proof.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
-            <a href={sample.liveDemoUrl}>Live demo URL</a>
-          </div>
-        </section>
-      </main>
-    </div>
-  );
+  function nextLevel() {
+    if (won) {
+      setLevel((current) => current + 1);
+      setSelected([]);
+    }
+  }
+  window.render_game_to_text = () => JSON.stringify({ mode: won ? "won" : "building", score, level, selected, passedGates, missingGates: gates.filter((gate) => !passedGates.includes(gate)), prompt });
+  window.advanceTime = () => undefined;
+  return <div className="game-shell"><header className="site-header"><a className="brand" href="https://foxandhenllc.com"><span className="brand-mark">F&amp;H</span><span><strong>Fox &amp; Hen</strong><small>Promptsmith Quest</small></span></a><nav><a href="#forge">Forge</a><a className="nav-button" href="https://github.com/foxandhenllc/foxhen-promptsmith-quest">Repository</a></nav></header><main><aside className="game-info"><p>Playable prompt puzzle</p><h1>Forge a prompt that passes every gate.</h1><p className="lede">Choose up to six blocks. The prompt wins when it covers the required categories and reaches a high enough quality score.</p><div className="controls"><span>Select up to 6 blocks</span><span>Required gates: {gates.join(", ")}</span><span>Win score: 84+</span></div><div className="action-row"><button onClick={() => setSelected([])}>Reset forge</button><button onClick={nextLevel} disabled={!won}>{won ? "Advance level" : "Pass gates first"}</button></div><div className="stat-grid"><article><span>Score</span><strong>{score}</strong><small>prompt quality</small></article><article><span>Level</span><strong>{level}</strong><small>quest round</small></article><article><span>Blocks</span><strong>{selected.length}/6</strong><small>selected</small></article><article><span>Status</span><strong>{won ? "Won" : "Forge"}</strong><small>{won ? "Prompt package passes QA." : "Missing gates remain."}</small></article></div></aside><section id="forge" className="game-card prompt-board"><div className="block-bank"><h2>Prompt blocks</h2><div className="block-grid">{blocks.map((block) => <button key={block.id} className={selected.includes(block.id) ? "prompt-block used" : "prompt-block"} onClick={() => toggle(block.id)}><strong>{block.title}</strong><small>{block.category} · {block.points} pts</small><small>{block.text}</small></button>)}</div></div><div className="prompt-forge"><h2>Forged prompt</h2><div className="gate-list">{gates.map((gate) => <div key={gate} className={passedGates.includes(gate) ? "gate ok" : "gate"}><span>{gate}</span><strong>{passedGates.includes(gate) ? "passed" : "missing"}</strong></div>)}</div><div className="prompt-slot">{won ? "Quest complete. This prompt is ready for a handoff package." : "Add required blocks until every QA gate passes."}</div><textarea className="prompt-output" value={prompt || "Selected prompt blocks will assemble here."} readOnly /></div></section></main></div>;
 }
 
-function HeroConsole({
-  currentStage,
-  activeWork,
-  readiness,
-  setActiveStage,
-}: {
-  currentStage: DemoStage;
-  activeWork: WorkItem;
-  readiness: number;
-  setActiveStage: (stage: number) => void;
-}) {
-  return (
-    <aside className="hero-console" aria-label="Interactive demo console">
-      <div className="console-bar">
-        <span />
-        <span />
-        <span />
-        <strong>{sample.title}</strong>
-      </div>
-      <div className="console-body">
-        <div className="console-rail">
-          {sample.stages.map((stage) => (
-            <button
-              key={stage.label}
-              type="button"
-              className={stage.label === currentStage.label ? "rail-item is-active" : "rail-item"}
-              onClick={() => setActiveStage(stage.index)}
-            >
-              <span>{stage.index}</span>
-              {stage.label}
-            </button>
-          ))}
-        </div>
-        <div className="console-main">
-          <div className="console-status">
-            <span>Local sample state</span>
-            <em className={statusClass[currentStage.status]}>{statusLabels[currentStage.status]}</em>
-          </div>
-          <h2>{currentStage.label}</h2>
-          <p>{currentStage.detail}</p>
-          <div className="mini-grid">
-            <div className="score-ring compact">
-              <strong>{readiness}</strong>
-              <span>score</span>
-            </div>
-            <article>
-              <span>Focus item</span>
-              <strong>{activeWork.title}</strong>
-              <small>{activeWork.detail}</small>
-            </article>
-          </div>
-          <div className="queue-list">
-            {sample.workItems.map((item) => (
-              <div key={item.title} className="queue-row">
-                <span className={statusClass[item.status]}>{statusLabels[item.status]}</span>
-                <strong>{item.title}</strong>
-                <small>{item.detail}</small>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </aside>
-  );
-}
-
+declare global { interface Window { render_game_to_text?: () => string; advanceTime?: (ms: number) => void; } }
 export default App;
