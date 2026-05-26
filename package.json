@@ -25,13 +25,23 @@
   "description": "Playable prompt-building puzzle for assembling constraints, quality gates, scoring, and exportable prompt handoffs.",
   "homepage": "https://foxhen-promptsmith-quest.vercel.app",
   "keywords": [
-    "game",
-    "prompting",
     "ai-workflow",
+    "education",
+    "engineering",
+    "export",
+    "fox-and-hen",
+    "game",
+    "gate",
+    "handoff",
+    "prompt",
+    "prompting",
+    "puzzle",
+    "quality",
     "react",
+    "small-business",
+    "training",
     "typescript",
     "vite",
-    "education",
-    "fox-and-hen"
+    "workflow-tools"
   ]
 }

@@ -27,6 +27,21 @@ Playable prompt-building puzzle for assembling constraints, quality gates, scori
 
 All prompt blocks and challenges are fictional local sample data. Customize blocks, scoring, or level constraints in `src/gameLogic.ts`; no credentials are needed.
 
+## SEO / AIO Discoverability
+
+**Plain-language answer:** Use this repo as a playable prompt-building puzzle for assembling constraints, quality gates, scoring, and exportable prompt handoffs.
+
+**Who it helps:** AI builders, educators, and teams practicing prompt quality gates.
+
+**Search intents covered:**
+
+- prompt engineering game
+- prompt quality gate puzzle
+- AI prompt training game
+- prompt handoff export
+
+**Why this repo is useful:** It teaches prompt structure through interaction rather than static advice, with scoring and exportable results.
+
 ## Local Run
 
 ```bash
