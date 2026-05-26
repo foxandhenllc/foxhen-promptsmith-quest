@@ -9,6 +9,10 @@ A playable prompt-building puzzle with constraints, QA gates, and final prompt s
 - Demo: [https://foxhen-promptsmith-quest.vercel.app](https://foxhen-promptsmith-quest.vercel.app)
 - Repository: [https://github.com/foxandhenllc/foxhen-promptsmith-quest](https://github.com/foxandhenllc/foxhen-promptsmith-quest)
 
+## Purpose
+
+Playable prompt-building puzzle for assembling constraints, quality gates, scoring, and exportable prompt handoffs.
+
 ## Fully Working Behaviors
 
 - Three-level prompt-building quest with changing challenge briefs, required categories, locked categories, max block counts, and pass scores.
