@@ -8,7 +8,7 @@ export const sample = {
   "primaryAction": "Forge prompt",
   "secondaryAction": "Inspect quality",
   "repositoryUrl": "https://github.com/foxandhenllc/foxhen-promptsmith-quest",
-  "liveDemoUrl": "https://foxhen-promptsmith-quest.vercel.app",
+  "liveDemoUrl": "https://freetoolsforpeople.com/promptsmith-quest",
   "theme": {
     "accent": "#513177",
     "accent2": "#f4c95d",

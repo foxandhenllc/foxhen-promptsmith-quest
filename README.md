@@ -6,7 +6,7 @@ A playable prompt-building puzzle with constraints, QA gates, and final prompt s
 
 ## Live Demo
 
-- Demo: [https://foxhen-promptsmith-quest.vercel.app](https://foxhen-promptsmith-quest.vercel.app)
+- Demo: [https://freetoolsforpeople.com/promptsmith-quest](https://freetoolsforpeople.com/promptsmith-quest)
 - Repository: [https://github.com/foxandhenllc/foxhen-promptsmith-quest](https://github.com/foxandhenllc/foxhen-promptsmith-quest)
 
 ## Purpose
