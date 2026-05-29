@@ -1,5 +1,7 @@
 # Promptsmith Quest
 
+[![Build](https://github.com/foxandhenllc/foxhen-promptsmith-quest/actions/workflows/build.yml/badge.svg)](https://github.com/foxandhenllc/foxhen-promptsmith-quest/actions/workflows/build.yml)
+
 A playable prompt-building puzzle with constraints, QA gates, and final prompt scoring.
 
 ![Demo screenshot](docs/demo-screenshot.png)
@@ -42,6 +44,13 @@ All prompt blocks and challenges are fictional local sample data. Customize bloc
 
 **Why this repo is useful:** It teaches prompt structure through interaction rather than static advice, with scoring and exportable results.
 
+## Open Source Readiness
+
+- MIT licensed for reuse, remixing, and client-safe adaptation.
+- GitHub Actions build workflow runs install, typecheck, tests when present, and production build.
+- Contribution guide, roadmap, and issue templates are included for public collaboration.
+- Public-safe data policy keeps examples fictional and reviewable.
+
 ## Local Run
 
 ```bash
@@ -49,3 +58,19 @@ npm install
 npm run dev
 npm run build
 ```
+
+## Validation
+
+```bash
+npm run typecheck --if-present
+npm run test --if-present
+npm run build --if-present
+```
+
+## Contributing
+
+See `CONTRIBUTING.md` for public-safe contribution rules, local validation commands, and good first contribution ideas. Roadmap items live in `ROADMAP.md`.
+
+## License
+
+MIT - see `LICENSE`.
